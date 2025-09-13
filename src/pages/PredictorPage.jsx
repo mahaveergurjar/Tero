@@ -1,7 +1,21 @@
 import React, { useState } from "react";
 import { useLanguage } from "../hooks/useLanguage";
-
+import { Listbox } from "@headlessui/react";
+import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 // Data for Indian States and Districts
+
+const crops = [
+  { value: "wheat", label: "Wheat" },
+  { value: "rice", label: "Rice" },
+  { value: "corn", label: "Corn" },
+];
+
+const soils = [
+  { value: "clay", label: "Clay" },
+  { value: "sandy", label: "Sandy" },
+  { value: "loam", label: "Loam" },
+];
+
 const locationData = {
   "Andaman and Nicobar Islands": [
     "Nicobar",
@@ -785,16 +799,19 @@ const PredictorPage = ({ onShowHome }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [predictionResult, setPredictionResult] = useState(null);
 
-  // State for location dropdowns
+  // Custom dropdown states
+  const [selectedCrop, setSelectedCrop] = useState(crops);
   const [selectedState, setSelectedState] = useState("");
   const [districts, setDistricts] = useState([]);
   const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [area, setArea] = useState("");
+  const [selectedSoil, setSelectedSoil] = useState(soils);
+  const [plantingDate, setPlantingDate] = useState("");
 
-  const handleStateChange = (e) => {
-    const state = e.target.value;
+  const handleStateChange = (state) => {
     setSelectedState(state);
     setDistricts(locationData[state] || []);
-    setSelectedDistrict(""); // Reset district selection when state changes
+    setSelectedDistrict("");
   };
 
   const handlePrediction = async (e) => {
@@ -808,30 +825,93 @@ const PredictorPage = ({ onShowHome }) => {
     const mockResult = {
       yield: (5.2 + Math.random() * 3).toFixed(1),
       confidence: (85 + Math.random() * 10).toFixed(1),
-      unit: t("predictor.result.unit"),
+      unit: "Tonnes/ha",
     };
-
     setPredictionResult(mockResult);
     setIsLoading(false);
   };
+
+  // Listbox render helper
+  const renderListbox = (
+    options,
+    selected,
+    setSelected,
+    label,
+    placeholder
+  ) => (
+    <div className="w-full mb-6">
+      <label className="block text-sm uppercase tracking-widest opacity-80 mb-3">
+        {label}
+      </label>
+      <Listbox value={selected} onChange={setSelected}>
+        <div className="relative">
+          <Listbox.Button className="w-full bg-stone-800/80 text-stone-100 border-b border-stone-300/30 py-4 pl-3 pr-10 text-left shadow-md focus:outline-none focus:border-stone-300/80 transition-all rounded-md">
+            <span className="block truncate">
+              {selected?.label || placeholder}
+            </span>
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+              <ChevronUpDownIcon
+                className="h-5 w-5 text-stone-400"
+                aria-hidden="true"
+              />
+            </span>
+          </Listbox.Button>
+          <Listbox.Options className="absolute z-10 mt-1 w-full bg-stone-900 text-stone-100 border border-stone-300/30 shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
+            {options.map((option, idx) => (
+              <Listbox.Option
+                key={option.value || option}
+                value={option}
+                className={({ active }) =>
+                  `relative cursor-pointer select-none py-3 pl-10 pr-4 ${
+                    active ? "bg-stone-700 text-stone-100" : "text-stone-100"
+                  }`
+                }
+              >
+                {({ selected: isSelected }) => (
+                  <>
+                    <span
+                      className={`block truncate ${
+                        isSelected ? "font-medium" : "font-normal"
+                      }`}
+                    >
+                      {option.label || option}
+                    </span>
+                    {isSelected ? (
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <CheckIcon
+                          className="h-5 w-5 text-lime-400"
+                          aria-hidden="true"
+                        />
+                      </span>
+                    ) : null}
+                  </>
+                )}
+              </Listbox.Option>
+            ))}
+          </Listbox.Options>
+        </div>
+      </Listbox>
+    </div>
+  );
 
   return (
     <section className="min-h-screen py-20 flex items-center">
       <div className="max-w-4xl mx-auto px-6 sm:px-10 w-full">
         <button
           onClick={onShowHome}
-          className="border border-stone-300/30 px-6 py-3 text-sm mb-10
-                     hover:bg-stone-100/10 hover:border-stone-300/60 transition-all tracking-wide"
+          className="border border-stone-300/30 px-6 py-3 text-sm mb-10 hover:bg-stone-100/10 hover:border-stone-300/60 transition-all tracking-wide"
         >
-          ← {t("predictor.back")}
+          ← {t("Back")}
         </button>
 
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-7xl font-light mb-6">
-            {t("predictor.title")}
+            {t("Yield Predictor")}
           </h1>
           <p className="text-lg opacity-70 tracking-wide">
-            {t("predictor.subtitle")}
+            {t(
+              "Get your crop yield estimate based on your inputs for any district in India."
+            )}
           </p>
         </div>
 
@@ -841,167 +921,98 @@ const PredictorPage = ({ onShowHome }) => {
             className="bg-stone-50/3 border border-stone-300/10 p-8 sm:p-16"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-              {/* Left column */}
-              <div className="space-y-6">
-                {/* Crop type */}
-                <div>
-                  <label className="block text-sm uppercase tracking-widest opacity-80 mb-3">
-                    {t("predictor.form.crop")}
-                  </label>
-                  <select
-                    required
-                    className="w-full bg-transparent border-b border-stone-300/30 py-4 text-stone-100 focus:border-stone-300/80 focus:outline-none transition-colors appearance-none hover:border-stone-300/60 disabled:opacity-50 disabled:cursor-not-allowed custom-select"
-                  >
-                    <option className="bg-stone-500" value="">
-                      Select Crop Type
-                    </option>
-                    <option className="bg-stone-500" value="wheat">
-                      Wheat
-                    </option>
-                    <option className="bg-stone-500" value="rice">
-                      Rice
-                    </option>
-                    <option className="bg-stone-500" value="corn">
-                      Corn
-                    </option>
-                  </select>
-                </div>
-
-                {/* State */}
-                <div>
-                  <label className="block text-sm uppercase tracking-widest opacity-80 mb-3">
-                    State
-                  </label>
-                  <select
-                    required
-                    value={selectedState}
-                    onChange={handleStateChange}
-                    className="w-full bg-transparent border-b border-stone-300/30 py-4 text-stone-100 focus:border-stone-300/80 focus:outline-none transition-colors"
-                  >
-                    <option className="bg-stone-500" value="">
-                      Select State
-                    </option>
-                    {Object.keys(locationData).map((state) => (
-                      <option
-                        key={state}
-                        value={state}
-                        className="bg-stone-500"
-                      >
-                        {state}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* District */}
-                <div>
-                  <label className="block text-sm uppercase tracking-widest opacity-80 mb-3">
-                    District
-                  </label>
-                  <select
-                    required
-                    value={selectedDistrict}
-                    onChange={(e) => setSelectedDistrict(e.target.value)}
-                    disabled={!selectedState}
-                    className="w-full bg-transparent border-b border-stone-300/30 py-4 text-stone-100 focus:border-stone-300/80 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option className="bg-stone-500" value="">
-                      Select District
-                    </option>
-                    {districts.map((district) => (
-                      <option
-                        key={district}
-                        value={district}
-                        className="bg-stone-500"
-                      >
-                        {district}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                {renderListbox(
+                  crops,
+                  selectedCrop,
+                  setSelectedCrop,
+                  "Crop Type",
+                  "Select Crop"
+                )}
+                {renderListbox(
+                  Object.keys(locationData).map((s) => ({
+                    value: s,
+                    label: s,
+                  })),
+                  selectedState
+                    ? { value: selectedState, label: selectedState }
+                    : null,
+                  (option) => {
+                    handleStateChange(option.value);
+                  },
+                  "State",
+                  "Select State"
+                )}
+                {renderListbox(
+                  districts.map((d) => ({ value: d, label: d })),
+                  selectedDistrict
+                    ? { value: selectedDistrict, label: selectedDistrict }
+                    : null,
+                  (option) => setSelectedDistrict(option.value),
+                  "District",
+                  "Select District"
+                )}
               </div>
-
-              {/* Right column */}
-              <div className="space-y-6">
-                {/* Area */}
-                <div>
+              <div>
+                <div className="mb-6">
                   <label className="block text-sm uppercase tracking-widest opacity-80 mb-3">
-                    {t("predictor.form.area")}
+                    Area (hectares)
                   </label>
                   <input
                     type="number"
                     required
                     min="0.1"
                     step="0.1"
+                    value={area}
+                    onChange={(e) => setArea(e.target.value)}
                     placeholder="Area in hectares"
-                    className="w-full bg-transparent border-b border-stone-300/30 py-4 text-stone-100 placeholder-stone-400 focus:border-stone-300/80 focus:outline-none transition-colors"
+                    className="w-full bg-stone-800/80 text-stone-100 border-b border-stone-300/30 py-4 pl-3 pr-10 placeholder-stone-400 focus:border-stone-300/80 focus:outline-none transition-all rounded-md"
                   />
                 </div>
-
-                {/* Soil type */}
-                <div>
+                {renderListbox(
+                  soils,
+                  selectedSoil,
+                  setSelectedSoil,
+                  "Soil Type",
+                  "Select Soil"
+                )}
+                <div className="mb-6">
                   <label className="block text-sm uppercase tracking-widest opacity-80 mb-3">
-                    {t("predictor.form.soil")}
-                  </label>
-                  <select
-                    required
-                    className="w-full bg-transparent border-b border-stone-300/30 py-4 text-stone-100 focus:border-stone-300/80 focus:outline-none transition-colors"
-                  >
-                    <option className="bg-stone-500" value="">
-                      Select Soil Type
-                    </option>
-                    <option className="bg-stone-500" value="clay">
-                      Clay
-                    </option>
-                    <option className="bg-stone-500" value="sandy">
-                      Sandy
-                    </option>
-                    <option className="bg-stone-500" value="loam">
-                      Loam
-                    </option>
-                  </select>
-                </div>
-
-                {/* Planting date */}
-                <div>
-                  <label className="block text-sm uppercase tracking-widest opacity-80 mb-3">
-                    {t("predictor.form.planting")}
+                    Planting Date
                   </label>
                   <input
                     type="date"
                     required
-                    className="w-full bg-transparent border-b border-stone-300/30 py-4 text-stone-100 focus:border-stone-300/80 focus:outline-none transition-colors"
+                    value={plantingDate}
+                    onChange={(e) => setPlantingDate(e.target.value)}
+                    className="w-full bg-stone-800/80 text-stone-100 border-b border-stone-300/30 py-4 pl-3 pr-10 focus:border-stone-300/80 focus:outline-none transition-all rounded-md"
                   />
                 </div>
               </div>
             </div>
-
-            {/* Submit */}
             <div className="text-center">
               <button
                 type="submit"
                 disabled={isLoading}
                 className="border border-stone-300/40 px-16 py-4 text-base hover:bg-stone-100/10 hover:border-stone-300/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 tracking-wide"
               >
-                {t("predictor.form.submit")}
+                {t("Submit")}
               </button>
             </div>
           </form>
         )}
 
-        {/* Loading */}
         {isLoading && (
           <div className="text-center py-10 opacity-70">
             <div className="w-10 h-10 border-2 border-stone-300/20 border-t-stone-100 rounded-full animate-spin mx-auto mb-4"></div>
-            <p>{t("predictor.loading")}</p>
+            <p>{t("Loading...")}</p>
           </div>
         )}
 
-        {/* Result */}
         {predictionResult && (
           <div className="bg-stone-100/5 border border-stone-300/20 p-10 text-center">
             <h3 className="text-xl font-medium mb-4 uppercase tracking-wide">
-              {t("predictor.result.title")}
+              {t("Result")}
             </h3>
             <div className="text-5xl font-light mb-2 text-stone-100">
               {predictionResult.yield}
@@ -1009,8 +1020,7 @@ const PredictorPage = ({ onShowHome }) => {
             <div className="text-stone-300 mb-6">{predictionResult.unit}</div>
             <div className="pt-6 border-t border-stone-300/10 opacity-80">
               <p>
-                {t("predictor.result.confidence")} {predictionResult.confidence}
-                %
+                {t("Confidence")}: {predictionResult.confidence}%
               </p>
             </div>
           </div>
