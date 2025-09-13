@@ -10,7 +10,7 @@ const Header = ({ onToggleNav, onShowHome }) => {
           onClick={onShowHome}
           className="text-xl font-semibold tracking-wider hover:opacity-80 transition-opacity"
         >
-          AgriTech<span className="text-amber-400">.AI</span>
+          <span className="text-amber-400">Tero</span>
         </button>
 
         <nav className="hidden md:flex items-center space-x-10">
